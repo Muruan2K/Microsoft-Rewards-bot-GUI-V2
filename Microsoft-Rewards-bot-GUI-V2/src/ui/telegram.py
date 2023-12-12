@@ -84,7 +84,7 @@ class Telegram(ft.UserControl):
             multiline=False,
             icon=ft.icons.SETTINGS_ETHERNET,
             helper_text="HTTP proxy to use for sending message to Telegram",
-            hint_text="(123.123.123.123:8080) or with auth (user:pass@123.123.123.123:8080)",
+            hint_text="(IP:PORT) or with auth (user:pass@IP:PORT)",
             suffix=ft.IconButton(
                 icon=ft.icons.CLEAR,
                 on_click=lambda e: self.clear_text_fields(e, self.proxy_field),

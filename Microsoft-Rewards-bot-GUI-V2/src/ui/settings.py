@@ -536,27 +536,34 @@ class Settings(ft.UserControl):
             tooltip="Disable images in browser while farming",
             on_change=lambda e: self.switches_on_change(e, "disable_images")
         )
+        self.skip_proxy_switch = ft.Switch(
+            label="Skip on proxy fail",
+            value=False,
+            active_color=self.color_scheme,
+            tooltip="Skip account if proxy fails to connect",
+            on_change=lambda e: self.switches_on_change(e, "skip_on_proxy_failure")
+        )
         self.global_settings = ft.Card(
             content=ft.Container(
                 content=ft.Column(
                     controls=[
                         ft.ListTile(
-                            title=ft.Text("Global settings"),
+                            title=ft.Text("App & Browser settings"),
                             leading=ft.Icon(ft.icons.SETTINGS_APPLICATIONS),
                         ),
-                        ft.Row([self.speed_dropdown_field]),
                         ft.Row([self.headless_switch,self.edge_switch], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         ft.Row([self.session_switch, self.use_proxy_switch], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         ft.Row([self.save_errors_switch, self.auto_start_switch], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         ft.Row([self.shutdown_switch, self.disable_images_switch], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        ft.Row([self.skip_proxy_switch])
                     ],
                     scroll="auto",
                     alignment=ft.MainAxisAlignment.CENTER
                 ),
                 margin=ft.margin.all(15),
-                height=308
+                height=310
             ),
-            expand=3,
+            expand=1,
         )
         
         # farmer settings
@@ -574,6 +581,7 @@ class Settings(ft.UserControl):
         )
         self.more_activities_switch = ft.Switch(
             label="More activities",
+            label_position=ft.LabelPosition.LEFT,
             value=True,
             active_color=self.color_scheme,
             on_change=lambda e: self.switches_on_change(e, "more_activities")
@@ -586,6 +594,7 @@ class Settings(ft.UserControl):
         )
         self.mobile_search_switch = ft.Switch(
             label="Mobile search",
+            label_position=ft.LabelPosition.LEFT,
             value=True,
             active_color=self.color_scheme,
             on_change=lambda e: self.switches_on_change(e, "mobile_search")
@@ -602,20 +611,21 @@ class Settings(ft.UserControl):
                 content=ft.Column(
                     controls=[
                         ft.ListTile(
-                            title=ft.Text("Farmer settings"),
+                            title=ft.Text("Tasks settings"),
                             leading=ft.Icon(ft.icons.SETTINGS_APPLICATIONS),
                         ),
+                        ft.Row([self.speed_dropdown_field]),
                         ft.Row([self.daily_quests_switch, self.msn_shopping_game_switch], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                        ft.Row([self.punch_cards_switch]),
-                        ft.Row([self.more_activities_switch]),
-                        ft.Row([self.pc_search_switch]),
-                        ft.Row([self.mobile_search_switch]),
+                        ft.Row([self.punch_cards_switch, self.more_activities_switch], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        ft.Row([self.pc_search_switch, self.mobile_search_switch], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                     ],
+                    scroll="auto",
                     alignment=ft.MainAxisAlignment.CENTER
                 ),
-                margin=ft.margin.all(15)
+                margin=ft.margin.all(15),
+                height=310
             ),
-            expand=3,
+            expand=1,
         )
         
         self.theme_changer = ThemeChanger(self.parent, self.page)
@@ -671,6 +681,7 @@ class Settings(ft.UserControl):
         self.use_proxy_switch.value = self.page.client_storage.get("MRFarmer.use_proxy")
         self.auto_start_switch.value = self.page.client_storage.get("MRFarmer.auto_start")
         self.disable_images_switch.value = self.page.client_storage.get("MRFarmer.disable_images")
+        self.skip_proxy_switch.value = self.page.client_storage.get("MRFarmer.skip_on_proxy_failure")
         # farmer settings
         self.daily_quests_switch.value = self.page.client_storage.get("MRFarmer.daily_quests")
         self.punch_cards_switch.value = self.page.client_storage.get("MRFarmer.punch_cards")
@@ -760,6 +771,8 @@ class Settings(ft.UserControl):
         self.edge_switch.active_color = color_scheme
         self.use_proxy_switch.active_color = color_scheme
         self.auto_start_switch.active_color = color_scheme
+        self.disable_images_switch.active_color = color_scheme
+        self.skip_proxy_switch.active_color = color_scheme
         # farmer settings
         self.daily_quests_switch.active_color = color_scheme
         self.punch_cards_switch.active_color = color_scheme

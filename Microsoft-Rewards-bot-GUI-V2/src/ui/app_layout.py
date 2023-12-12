@@ -12,6 +12,7 @@ from pathlib import Path
 import json
 from datetime import datetime
 import requests, webbrowser
+import platform
 from src.core.other_functions import resource_path
 
 
@@ -36,8 +37,8 @@ class UserInterface:
         self.light_theme_color = self.get_light_theme_color()
         self.dark_theme_color = self.get_dark_theme_color()
         self.color_scheme = self.get_color_scheme()
-        self.page.theme = theme.Theme(color_scheme_seed=self.light_theme_color)
-        self.page.dark_theme = theme.Theme(color_scheme_seed=self.dark_theme_color)
+        self.page.theme = ft.Theme(color_scheme_seed=self.light_theme_color)
+        self.page.dark_theme = ft.Theme(color_scheme_seed=self.dark_theme_color)
         self.page.window_height = 820
         self.page.window_width = 1280
         self.page.window_min_height = 795
@@ -46,12 +47,20 @@ class UserInterface:
         self.page.window_center()
         self.page.on_route_change = self.on_route_change
         self.page.on_error = self.save_app_error
-        self.is_farmer_running: bool = False
+        self._is_farmer_running: bool = False
         self.is_checking_update: bool = False
         self.ui()
         self.page.update()
         self.auto_start_if_needed()
         self.check_for_update(None, True)
+    
+    @property
+    def is_farmer_running(self):
+        return self._is_farmer_running
+    
+    @is_farmer_running.setter
+    def is_farmer_running(self, value):
+        self._is_farmer_running = value
         
     def ui(self):
         menu_button = ft.IconButton(ft.icons.MENU)
@@ -129,7 +138,7 @@ class UserInterface:
                 self.home_page.build()
             ),
             (
-                dict(icon=ft.icons.PERSON, selected_icon=ft.icons.PERSON, label="Accounts"),
+                dict(icon=ft.icons.PEOPLE_ALT, selected_icon=ft.icons.PEOPLE_ALT, label="Accounts"),
                 self.accounts_page.build()
             ),
             (
@@ -153,7 +162,7 @@ class UserInterface:
         self.menu_layout = ResponsiveMenuLayout(self.page, pages, landscape_minimize_to_icons=True)
         menu_button.on_click = lambda e: self.menu_layout.toggle_navigation()
         self.page.add(self.menu_layout)
-        
+    
     def window_event(self, e):
         if e.data == "close":
             self.page.dialog = self.exit_dialog
@@ -205,6 +214,7 @@ class UserInterface:
         self.page.client_storage.set("MRFarmer.edge_webdriver", False)
         self.page.client_storage.set("MRFarmer.use_proxy", False)
         self.page.client_storage.set("MRFarmer.auto_start", False)
+        self.page.client_storage.set("MRFarmer.skip_on_proxy_failure", False)
         ## farmer settings
         self.page.client_storage.set("MRFarmer.daily_quests", True)
         self.page.client_storage.set("MRFarmer.punch_cards", True)
@@ -286,10 +296,6 @@ class UserInterface:
                 f.write("APP_ERROR:\n")
                 f.write(f"{e.data}\n")
             
-    def get_farming_status(self):
-        """checks by farmer to know stop or continue farming"""
-        return self.is_farmer_running
-    
     def auto_start_if_needed(self):
         """Start to Farm if auto start is enabled at startup"""
         if self.page.session.contains_key("MRFarmer.accounts") and self.page.client_storage.get("MRFarmer.auto_start"):
@@ -317,14 +323,37 @@ class UserInterface:
         def download(tag_name: str):
             download_btn.disabled = True
             close_btn.disabled = True
-            self.update_dialog.content = ft.Column([ft.Text("Downloading..."), ft.ProgressBar(width=300, color=self.color_scheme)], height=50)
+            progress_bar = ft.ProgressBar(width=300, color=self.color_scheme)
+            text = ft.Text("Downloading...")
+            self.update_dialog.content = ft.Column([text, progress_bar], height=50)
             self.page.update()
-            download_url = f"https://github.com/farshadz1997/Microsoft-Rewards-bot-GUI-V2/archive/refs/tags/{tag_name}.zip"
+            exe = False
+            downloaded_size = 0
+            total_size = 0
+            if platform.system() == "Windows" and len(release_info['assets']) > 0:
+                download_url = release_info['assets'][0]['browser_download_url']
+                file_name = release_info['assets'][0]['name']
+                total_size = release_info['assets'][0]['size']
+                exe = True
+            else:
+                file_name = f"Source_code_{release_info['name']}.zip"
+                download_url = f"https://github.com/farshadz1997/Microsoft-Rewards-bot-GUI-V2/archive/refs/tags/{tag_name}.zip"
             try:
-                response = requests.get(download_url)
+                response = requests.get(download_url, stream=True if exe else None)
                 if response.status_code == 200:
-                    with open(resource_path(f"Microsoft-Rewards-bot-GUI-V2_{release_info['name']}.zip", True), "wb") as f:
-                        f.write(response.content)
+                    if exe:
+                        with open(file_name, 'wb') as file:
+                            for data in response.iter_content(chunk_size=8192):
+                                file.write(data)
+                                downloaded_size += len(data)
+                                downloaded_size_mb = downloaded_size / 1024 / 1024
+                                percentage = (downloaded_size / total_size)
+                                progress_bar.value = percentage
+                                text.value = f"Downloading {downloaded_size_mb:.2f} MB of {total_size / 1024 / 1024:.2f} MB ({percentage * 100:.2f}%)"
+                                self.page.update()
+                    else:
+                        with open(resource_path(file_name, True), "wb") as f:
+                            f.write(response.content)
                     self.update_dialog.content = ft.Column([ft.Text("Download completed"), ft.ProgressBar(width=300, color="green", value=100)], height=50)
                     download_btn.disabled = False
                     close_btn.disabled = False

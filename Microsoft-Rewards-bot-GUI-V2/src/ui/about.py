@@ -2,7 +2,7 @@ import flet as ft
 import webbrowser
 
 
-__VERSION__ = 1.4
+__VERSION__ = 1.5
 __AUTHOR__ = "Farshad"
 __ID__ = "Farshadz1997"
 __CONTENT__ = f"""
@@ -10,7 +10,7 @@ __CONTENT__ = f"""
 
 **Author: [{__AUTHOR__} ({__ID__})](https://github.com/farshadz1997)**
 
-**Community: [Discord](https://discord.gg/GaF8fFBtE3)**
+**Community: [Telegram group](https://telegram.me/MRF_Group)**
 
 **Repository: [GitHub](https://github.com/farshadz1997/Microsoft-Rewards-bot-GUI-V2), [GitLab](https://gitlab.com/farshadzargary1997/Microsoft-Rewards-bot-GUI-V2)**
 

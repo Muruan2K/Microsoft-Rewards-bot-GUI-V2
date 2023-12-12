@@ -69,20 +69,22 @@ class AccountsContainer(ft.UserControl):
         self.accounts_page.search_field.value = ""
         if by == "Farmed":
             filtered_accounts = list(filter(
-                lambda account: account["log"]["Last check"] == str(date.today()) and account["log"]["Status"] == accountStatus.FARMED.value, 
+                lambda account: account["log"]["Last check"] == str(date.today()) and account["log"]["Status"] == accountStatus.FARMED, 
                 accounts)
             )
         elif by == "Locked":
-            filtered_accounts = list(filter(lambda account: account["log"]["Status"] == accountStatus.LOCKED.value, accounts))
+            filtered_accounts = list(filter(lambda account: account["log"]["Status"] == accountStatus.LOCKED, accounts))
         elif by == "Suspended":
-            filtered_accounts = list(filter(lambda account: account["log"]["Status"] == accountStatus.SUSPENDED.value, accounts))
+            filtered_accounts = list(filter(lambda account: account["log"]["Status"] == accountStatus.SUSPENDED, accounts))
         elif by == "Accounts with error":
             filtered_accounts = list(
                 filter(
                     lambda account: account["log"]["Status"] in (
-                        accountStatus.ERROR.value,
-                        accountStatus.SEARCH_WORDS_ERROR.value,
-                        accountStatus.UNUSUAL_ACTIVITY.value,
+                        accountStatus.ERROR,
+                        accountStatus.SEARCH_WORDS_ERROR,
+                        accountStatus.UNUSUAL_ACTIVITY,
+                        accountStatus.PC_LOGIN_FAILED,
+                        accountStatus.MOBILE_LOGIN_FAILED
                         ),
                     accounts
                     )
@@ -145,6 +147,7 @@ class AccountCard:
         self.accounts_path = accounts_path
         self.accounts_page: Type[Accounts] = accounts_page
         self.card_creator()
+        self.set_tint_on_card()
         
     def card_creator(self):
         popup_items = [
@@ -193,6 +196,7 @@ class AccountCard:
             
         self.card = ft.Card(
             expand=4,
+            elevation=3.5,
             content=ft.Container(
                 margin=ft.margin.all(15),
                 content=ft.Column(
@@ -222,7 +226,7 @@ class AccountCard:
         )
         
     def is_farmed(self):
-        if self.account["log"]["Last check"] == str(date.today()) and self.account["log"].get("Status", "Not farmed") == accountStatus.FARMED.value:
+        if self.account["log"]["Last check"] == str(date.today()) and self.account["log"].get("Status", "Not farmed") == accountStatus.FARMED:
             return True
         return False
     
@@ -230,15 +234,19 @@ class AccountCard:
         last_check = self.account["log"]["Last check"]
         if self.is_farmed():
             return ft.Icon(ft.icons.CHECK, color="green")
-        elif self.account["log"].get("Status", last_check) == accountStatus.SUSPENDED.value:
+        elif self.account["log"].get("Status", last_check) == accountStatus.SUSPENDED:
             return ft.Icon(ft.icons.BLOCK, color="red")
-        elif self.account["log"].get("Status", last_check) == accountStatus.LOCKED.value:
+        elif self.account["log"].get("Status", last_check) == accountStatus.LOCKED:
             return ft.Icon(ft.icons.LOCK, color=ft.colors.AMBER_500)
-        elif self.account["log"].get("Status", last_check) == accountStatus.UNUSUAL_ACTIVITY.value:
+        elif self.account["log"].get("Status", last_check) == accountStatus.UNUSUAL_ACTIVITY:
             return ft.Icon(ft.icons.WARNING, color=ft.colors.AMBER_500)
-        elif self.account["log"].get("Status", last_check) == accountStatus.SEARCH_WORDS_ERROR.value:
-            return ft.Icon(ft.icons.ERROR, color=ft.colors.AMBER_500)
-        elif self.account["log"].get("Status", last_check) == accountStatus.ERROR.value:
+        elif self.account["log"].get("Status", last_check) in (
+            accountStatus.SEARCH_WORDS_ERROR,
+            accountStatus.ERROR,
+            accountStatus.PC_LOGIN_FAILED,
+            accountStatus.MOBILE_LOGIN_FAILED,
+            accountStatus.PROXY_DEAD
+        ):
             return ft.Icon(ft.icons.ERROR, color=ft.colors.AMBER_500)
         else:
             return ft.Icon(ft.icons.ACCOUNT_CIRCLE)
@@ -252,22 +260,40 @@ class AccountCard:
         last_check = self.account["log"]["Last check"]
         if "Status" in self.account["log"].keys():
             if self.is_farmed():
-                return f"{self.account['log']['Last check']} | {self.account['log'].get('Status', accountStatus.NOT_FARMED.value)}"
-            elif self.account["log"].get("Status", last_check) == accountStatus.SUSPENDED.value:
+                return f"{self.account['log']['Last check']} | {self.account['log'].get('Status', accountStatus.NOT_FARMED)}"
+            elif self.account["log"].get("Status", last_check) == accountStatus.SUSPENDED:
                 return "Your account has been suspended"
-            elif self.account["log"].get("Status", last_check) == accountStatus.LOCKED.value:
+            elif self.account["log"].get("Status", last_check) == accountStatus.LOCKED:
                 return "Your account has been locked"
-            elif self.account["log"].get("Status", last_check) == accountStatus.UNUSUAL_ACTIVITY.value:
+            elif self.account["log"].get("Status", last_check) == accountStatus.UNUSUAL_ACTIVITY:
                 return "Unusual activity detected"
-            elif self.account["log"].get("Status", last_check) == accountStatus.SEARCH_WORDS_ERROR.value:
+            elif self.account["log"].get("Status", last_check) == accountStatus.SEARCH_WORDS_ERROR:
                 return "Couldn't get search words"
-            elif self.account["log"].get("Status", last_check) == accountStatus.ERROR.value:
+            elif self.account["log"].get("Status", last_check) == accountStatus.ERROR:
                 return "Unknown error"
+            elif self.account["log"].get("Status", last_check) == accountStatus.PC_LOGIN_FAILED:
+                return "Couldn't login to PC"
+            elif self.account["log"].get("Status", last_check) == accountStatus.MOBILE_LOGIN_FAILED:
+                return "Couldn't login to mobile"
+            elif self.account["log"].get("Status", last_check) == accountStatus.PROXY_DEAD:
+                return "Proxy did not work"
             else:
-                return f"{self.account['log']['Last check']} | {self.account['log'].get('Status', accountStatus.NOT_FARMED.value)}"
+                return f"{self.account['log']['Last check']} | {self.account['log'].get('Status', accountStatus.NOT_FARMED)}"
         else:
             return f"{self.account['log']['Last check']}"
 
+    def set_tint_on_card(self):
+        if self.is_farmed():
+            self.card.surface_tint_color = ft.colors.GREEN_500
+            self.card.shadow_color = ft.colors.GREEN
+        elif self.account["log"]["Status"] in accountStatus.error_list():
+            self.card.surface_tint_color = ft.colors.AMBER_500
+            self.card.shadow_color = ft.colors.AMBER
+        elif self.account["log"]["Status"] == accountStatus.SUSPENDED:
+            self.card.surface_tint_color = ft.colors.RED_500
+            self.card.shadow_color = ft.colors.RED
+        else:
+            return
 
 class Accounts(ft.UserControl):
     def __init__(self, parent, page: ft.Page):
@@ -757,6 +783,10 @@ class Accounts(ft.UserControl):
             if acc["username"] == account:
                 acc["log"]["Last check"] = str(date.today())
                 acc["log"]["Status"] = "Not farmed"
+                if not isinstance(acc["log"]["Today's points"], int):
+                    acc["log"]["Today's points"] = 0
+                if not isinstance(acc["log"]["Points"], int):
+                    acc["log"]["Points"] = 0
                 acc["log"].pop("Daily", None)
                 acc["log"].pop("Punch cards", None)
                 acc["log"].pop("More promotions", None)
@@ -776,6 +806,10 @@ class Accounts(ft.UserControl):
         for account in accounts:
             account["log"]["Last check"] = str(date.today())
             account["log"]["Status"] = "Not farmed"
+            if not isinstance(account["log"]["Today's points"], int):
+                account["log"]["Today's points"] = 0
+            if not isinstance(account["log"]["Points"], int):
+                account["log"]["Points"] = 0
             account["log"].pop("Daily", None)
             account["log"].pop("Punch cards", None)
             account["log"].pop("More promotions", None)

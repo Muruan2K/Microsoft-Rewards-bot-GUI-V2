@@ -162,13 +162,13 @@ class Home(ft.UserControl):
         )
         
         # Card to display overall information about all accounts
-        self.number_of_accounts_label = ft.Text("All: ", text_align="left", font_family="SF regular")
+        self.number_of_accounts_label = ft.Text("All:", text_align="left", font_family="SF regular")
         self.number_of_accounts = ft.Text("0", text_align="right", font_family="SF regular")
-        self.finished_accounts_label = ft.Text("Finished: ", font_family="SF regular")
-        self.number_of_finished_accounts = ft.Text("0", font_family="SF regular")
+        self.finished_accounts_label = ft.Text("Finished || Failed:", font_family="SF regular")
+        self.number_of_finished_accounts = ft.Text("0 || 0", font_family="SF regular")
         self.locked_accounts_label = ft.Text("Locked: ", font_family="SF regular")
         self.number_of_locked_accounts = ft.Text("0", font_family="SF regular")
-        self.suspended_accounts_label = ft.Text("Suspended: ", font_family="SF regular")
+        self.suspended_accounts_label = ft.Text("Suspended:", font_family="SF regular")
         self.number_of_suspended_accounts = ft.Text("0", font_family="SF regular")
         self.overall_description_card = ft.Card(
             content=ft.Container(
@@ -440,7 +440,7 @@ class Home(ft.UserControl):
       
     def update_overall_infos(self):
         self.number_of_accounts.value = len(self.accounts)
-        self.number_of_finished_accounts.value = len(self.farmer.finished_accounts)
+        self.number_of_finished_accounts.value = f"{len(self.farmer.finished_accounts)} || {len(self.farmer.failed_accounts)}"
         self.number_of_locked_accounts.value = len(self.farmer.locked_accounts)
         self.number_of_suspended_accounts.value = len(self.farmer.suspended_accounts)
         self.page.update()

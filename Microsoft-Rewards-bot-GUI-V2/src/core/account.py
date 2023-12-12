@@ -4,14 +4,28 @@ import flet as ft
 from enum import Enum
 
 
-class accountStatus(Enum):
+class accountStatus:
     FARMED: str = "Farmed"
     NOT_FARMED: str = "Not farmed"
     LOCKED: str = "Your account has been locked"
     SUSPENDED: str = "Your account has been suspended"
     UNUSUAL_ACTIVITY: str = "Unusual activity detected"
     ERROR: str = "Unknown error"
+    PC_LOGIN_FAILED: str = "PC login failed"
+    MOBILE_LOGIN_FAILED: str = "Mobile login failed"
     SEARCH_WORDS_ERROR: str = "Couldn't get search words"
+    PROXY_DEAD: str = "Proxy is dead"
+    
+    @classmethod
+    def error_list(cls):
+        return (
+            cls.LOCKED,
+            cls.UNUSUAL_ACTIVITY,
+            cls.ERROR, cls.PC_LOGIN_FAILED,
+            cls.MOBILE_LOGIN_FAILED,
+            cls.SEARCH_WORDS_ERROR,
+            cls.PROXY_DEAD
+        )
     
 
 class Account:
@@ -148,7 +162,7 @@ class Account:
     def update_value_in_log(self, key: str, value: Union[str, int, bool]):
         self.account["log"][key] = value
         
-    def get_log_value(self, key: str) -> str:
+    def get_log_value(self, key: str) -> Union[str, bool, int]:
         return self.account["log"][key]
     
     def need_log_correction(self) -> bool:
@@ -163,19 +177,24 @@ class Account:
         self.account["log"]["Mobile searches"] = False
           
     def was_finished(self) -> bool:
-        return self.status == accountStatus.FARMED.value and self.last_check == str(date.today())
+        return self.status == accountStatus.FARMED and self.last_check == str(date.today())
     
     def was_locked(self) -> bool:
-        return self.status == accountStatus.LOCKED.value
+        return self.status == accountStatus.LOCKED
     
     def was_suspended(self) -> bool:
-        return self.status == accountStatus.SUSPENDED.value
+        return self.status == accountStatus.SUSPENDED
     
     def got_unusual_activity(self) -> bool:
-        return self.status == accountStatus.UNUSUAL_ACTIVITY.value
+        return self.status == accountStatus.UNUSUAL_ACTIVITY
     
     def ran_into_error(self) -> bool:
-        return self.status == accountStatus.ERROR.value or self.status == accountStatus.SEARCH_WORDS_ERROR.value
+        return self.status in (
+            accountStatus.ERROR,
+            accountStatus.PC_LOGIN_FAILED,
+            accountStatus.MOBILE_LOGIN_FAILED,
+            accountStatus.SEARCH_WORDS_ERROR
+        )
     
     def need_farm(self) -> bool:
         conditions = []
@@ -210,6 +229,13 @@ class Account:
             return True
         else:
             return False
+    
+    def is_mobile_need(self) -> bool:
+        return (
+            self.page.client_storage.get("MRFarmer.mobile_search") and 
+            not self.get_log_value("Mobile searches") and 
+            (self.mobile_remaining_searches > 0 or self.mobile_remaining_searches == -1)
+        )
         
     def clean_log(self):
         """Delete Daily, Punch cards, More promotions, PC searches and Mobile searches from logs"""
@@ -247,4 +273,9 @@ class Account:
             return f"🎁 Ready to redeem: {self.redeem_goal_title} for {self.redeem_goal_price} points ({redeem_count}x)\n\n"
         else:
             return f"🎁 Ready to redeem: {self.redeem_goal_title} for {self.redeem_goal_price} points\n\n"
-        
+    
+    def finish(self):
+        self.earned_points = self.points_counter - self.starting_points
+        self.points = self.points_counter
+        self.status = accountStatus.FARMED
+        self.clean_log()
